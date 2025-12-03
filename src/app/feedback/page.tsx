@@ -12,8 +12,8 @@ export default function FeedbackPage() {
   const [isSuccess, setIsSuccess] = useState(false);
 
   // 🤖 Ganti dengan Token Bot & Chat ID Telegram kamu
-  const TELEGRAM_BOT_TOKEN = "8477267377:AAH8bB8anNvcww4ip2jqTpyW4TVQr2e47io";
-  const TELEGRAM_CHAT_ID = "5366253099";
+  const TELEGRAM_BOT_TOKEN = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN;
+  const TELEGRAM_CHAT_ID = process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID;
 
   const handleSubmit = async () => {
     if (!feedback.trim() || feedback.length < 10) {
