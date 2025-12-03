@@ -1,103 +1,313 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import ProjectCard from "./projects/ProjectCard";
+
+type Video = {
+  id: string;
+  title: string;
+  thumbnail: string;
+  description: string;
+};
+
+const linkify = (text: string) => {
+  if (!text) return text;
+
+  const urlRegex = /(https?:\/\/[^\s]+)/gi;
+  const newlineRegex = /\r\n|\r|\n/g;
+  const lines = text.split(newlineRegex);
+
+  return lines.map((line, lineIndex) => {
+    const parts = line.split(urlRegex);
+    const hasContent = line.trim().length > 0;
+
+    const elements = parts.map((part, index) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-pink-400 hover:text-pink-300 underline transition"
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+
+    return (
+      <span key={lineIndex}>
+        {elements}
+        {lineIndex < lines.length - 1 && hasContent && <br />}
+      </span>
+    );
+  });
+};
+
+export default function HomePage() {
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+
+  useEffect(() => {
+    async function fetchVideos() {
+      try {
+        const res = await fetch("/api/videos");
+        const data = await res.json();
+        setVideos(data);
+      } catch (error) {
+        console.error("Error fetching videos:", error);
+      }
+    }
+    fetchVideos();
+  }, []);
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        alert("✅ Link copied to clipboard!");
+      } else {
+        const el = document.createElement("textarea");
+        el.value = text;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+        alert("✅ Link copied to clipboard!");
+      }
+    } catch (err) {
+      console.error("Copy failed", err);
+      alert("Failed to copy link.");
+    }
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="p-8 relative z-10">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <h1
+          className="text-4xl font-bold text-white drop-shadow-[0_0_6px_rgba(0,0,0,0.6)] mt-2 mb-6"
+          style={{
+            WebkitTextStroke: "0.6px rgba(0,0,0,0.25)",
+          }}
+        >
+          Projects
+        </h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        {selectedVideo ? (
+          <motion.div
+            key={selectedVideo.id}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="flex flex-col lg:flex-row items-start gap-8"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="flex-1 w-full"
+            >
+              <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-lg border border-white/10">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src={`https://www.youtube.com/embed/${selectedVideo.id}?autoplay=1`}
+                  title={selectedVideo.title}
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </div>
+
+              <div className="mt-6 flex flex-wrap justify-center lg:justify-start gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setSelectedVideo(null)}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                >
+                  ⬅️ Back to Projects
+                </motion.button>
+
+                <motion.a
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  href={`https://www.youtube.com/channel/UCy4yQVU_kWnGFktKFYMWYKQ?sub_confirmation=1`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-md text-sm font-semibold text-white transition flex items-center gap-1"
+                >
+                  🔔 Subscribe
+                </motion.a>
+
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsShareOpen(true)}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm font-semibold text-white transition flex items-center gap-1"
+                >
+                  🔗 Share
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() =>
+                    window.open(
+                      `https://www.youtube.com/watch?v=${selectedVideo.id}`,
+                      "_blank"
+                    )
+                  }
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-800 rounded-md text-sm font-semibold text-white transition flex items-center gap-1"
+                >
+                  👍 Like
+                </motion.button>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="flex-1 w-full bg-black/40 backdrop-blur-md p-6 rounded-2xl border border-white/10 text-white"
+            >
+              <h2 className="text-2xl font-semibold mb-4">
+                {selectedVideo.title}
+              </h2>
+              <p className="text-sm text-gray-300 leading-relaxed mb-6 break-all">
+                {linkify(
+                  selectedVideo.description || "No description available."
+                )}
+              </p>
+            </motion.div>
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+            className="grid grid-cols-2 md:grid-cols-3 gap-6"
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+            {videos.map((video) => (
+              <div
+                key={video.id}
+                onClick={() => setSelectedVideo(video)}
+                className="cursor-pointer"
+              >
+                <ProjectCard
+                  title={video.title}
+                  type="video"
+                  source={`https://www.youtube-nocookie.com/embed/${video.id}`}
+                />
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </motion.div>
+
+      <AnimatePresence>
+        {isShareOpen && selectedVideo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
+            onClick={() => setIsShareOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
+              className="bg-gray-900 border border-white/10 rounded-2xl p-6 w-80 text-center text-white shadow-lg"
+            >
+              <h3 className="text-lg font-semibold mb-4">Share this video</h3>
+
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={async () => {
+                    await copyToClipboard(
+                      `https://www.youtube.com/watch?v=${selectedVideo.id}`
+                    );
+                    setIsShareOpen(false);
+                  }}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-800 rounded-md text-sm font-semibold"
+                >
+                  📋 Copy Link
+                </button>
+
+                <a
+                  href={`https://twitter.com/intent/tweet?url=https://www.youtube.com/watch?v=${selectedVideo.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-sky-600 hover:bg-sky-700 rounded-md text-sm font-semibold"
+                >
+                  🐦 Share to X (Twitter)
+                </a>
+
+                <a
+                  href={`https://www.facebook.com/sharer/sharer.php?u=https://www.youtube.com/watch?v=${selectedVideo.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-blue-800 hover:bg-blue-900 rounded-md text-sm font-semibold"
+                >
+                  📘 Share to Facebook
+                </a>
+
+                <a
+                  href={`https://api.whatsapp.com/send?text=https://www.youtube.com/watch?v=${selectedVideo.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-md text-sm font-semibold"
+                >
+                  💬 Share to WhatsApp
+                </a>
+
+                <button
+                  onClick={async () => {
+                    await copyToClipboard(
+                      `https://www.youtube.com/watch?v=${selectedVideo.id}`
+                    );
+                    alert("📋 Link copied! Paste it on Instagram bio or story.");
+                    window.open("https://www.instagram.com/", "_blank");
+                    setIsShareOpen(false);
+                  }}
+                  className="px-4 py-2 bg-pink-600 hover:bg-pink-700 rounded-md text-sm font-semibold"
+                >
+                  📸 Share to Instagram
+                </button>
+
+                <a
+                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+                    `https://www.youtube.com/watch?v=${selectedVideo.id}`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-blue-700 hover:bg-blue-800 rounded-md text-sm font-semibold"
+                >
+                  💼 Share to LinkedIn
+                </a>
+              </div>
+
+              <button
+                onClick={() => setIsShareOpen(false)}
+                className="mt-5 text-gray-400 hover:text-white text-sm"
+              >
+                Close
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
