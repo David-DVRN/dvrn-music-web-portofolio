@@ -58,9 +58,24 @@ export default function HomePage() {
       try {
         const res = await fetch("/api/videos");
         const data = await res.json();
-        setVideos(data);
+        
+        // ✅ Cek apakah data adalah error object atau array
+        if (data.error) {
+          console.error("API returned error:", data.error);
+          setVideos([]); // Set empty array
+          return;
+        }
+        
+        // ✅ Pastikan data adalah array
+        if (Array.isArray(data)) {
+          setVideos(data);
+        } else {
+          console.error("Unexpected data format:", data);
+          setVideos([]);
+        }
       } catch (error) {
         console.error("Error fetching videos:", error);
+        setVideos([]);
       }
     }
     fetchVideos();
@@ -197,20 +212,27 @@ export default function HomePage() {
             transition={{ duration: 0.4 }}
             className="grid grid-cols-2 md:grid-cols-3 gap-6"
           >
-            {videos.map((video) => (
-              <div
-                key={video.id}
-                onClick={() => setSelectedVideo(video)}
-                className="cursor-pointer"
-              >
-                <ProjectCard
-                  title={video.title}
-                  type="video"
-                  source={`https://www.youtube-nocookie.com/embed/${video.id}`}
-                />
+            {videos.length > 0 ? (
+              videos.map((video) => (
+                <div
+                  key={video.id}
+                  onClick={() => setSelectedVideo(video)}
+                  className="cursor-pointer"
+                >
+                  <ProjectCard
+                    title={video.title}
+                    type="video"
+                    source={`https://www.youtube-nocookie.com/embed/${video.id}`}
+                  />
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full text-center text-white py-8">
+                <p className="text-lg">🔄 Loading videos...</p>
+                <p className="text-sm text-gray-400 mt-2">Please wait while we fetch your YouTube videos</p>
               </div>
-            ))}
-          </motion.div>
+            )}
+                      </motion.div>
         )}
       </motion.div>
 

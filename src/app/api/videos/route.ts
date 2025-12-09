@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const API_KEY = process.env.YOUTUBE_API_KEY!;
+const API_KEY = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY!;
 const UPLOADS_PLAYLIST_ID = "UUy4yQVU_kWnGFktKFYMWYKQ"; // Ganti 'UC' jadi 'UU'
 const MAX_RESULTS = 50;
 
